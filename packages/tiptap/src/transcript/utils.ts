@@ -1,0 +1,159 @@
+import type { SpeakerIdentity, Word2 } from "@hypr/plugin-db";
+import { JSONContent } from "@tiptap/react";
+
+export type { Word2 };
+
+export const SPEAKER_ID_ATTR = "speaker-id" as const;
+export const SPEAKER_INDEX_ATTR = "speaker-index" as const;
+export const SPEAKER_LABEL_ATTR = "speaker-label" as const;
+
+export interface SpeakerAttributes {
+  [SPEAKER_INDEX_ATTR]: number | null;
+  [SPEAKER_ID_ATTR]: string | null;
+  [SPEAKER_LABEL_ATTR]: string | null;
+}
+
+export type SpeakerAttrKey = keyof SpeakerAttributes;
+
+export type DocContent = {
+  type: string;
+  content: SpeakerContent[];
+};
+
+type TextContent = {
+  type: "text";
+  text: string;
+  marks?: Array<{
+    type: string;
+    attrs?: any;
+  }>;
+};
+
+type SpeakerContent = {
+  type: "speaker";
+  content: TextContent[];
+  attrs: SpeakerAttributes;
+};
+
+export const fromWordsToEditor = (words: Word2[]): DocContent => {
+  return {
+    type: "doc",
+    content: words.reduce<{ cur: SpeakerIdentity | null; acc: SpeakerContent[] }>((state, word, index) => {
+      const isFirst = state.acc.length === 0;
+
+      const isSameSpeaker = (!state.cur && !word.speaker)
+        || (state.cur?.type === "unassigned" && word.speaker?.type === "unassigned"
+          && state.cur.value.index === word.speaker.value.index)
+        || (state.cur?.type === "assigned" && word.speaker?.type === "assigned"
+          && state.cur.value.id === word.speaker.value.id);
+
+      if (isFirst || !isSameSpeaker) {
+        state.cur = word.speaker;
+
+        state.acc.push({
+          type: "speaker",
+          attrs: {
+            [SPEAKER_INDEX_ATTR]: word.speaker?.type === "unassigned" ? word.speaker.value?.index : null,
+            [SPEAKER_ID_ATTR]: word.speaker?.type === "assigned" ? word.speaker.value?.id : null,
+            [SPEAKER_LABEL_ATTR]: word.speaker?.type === "assigned" ? word.speaker.value?.label || "" : null,
+          },
+          content: [],
+        });
+      }
+
+      const lastSpeaker = state.acc[state.acc.length - 1];
+
+      if (lastSpeaker.content.length > 0) {
+        lastSpeaker.content.push({ type: "text", text: " " });
+      }
+
+      if (word.confidence !== null && word.confidence < 0) {
+        lastSpeaker.content.push({
+          type: "text",
+          text: word.text,
+          marks: [
+            {
+              type: "interim",
+              attrs: {
+                interim: true,
+              },
+            },
+          ],
+        });
+      } else {
+        lastSpeaker.content.push({ type: "text", text: word.text });
+      }
+
+      return state;
+    }, { cur: null, acc: [] }).acc,
+  };
+};
+
+export const fromEditorToWords = (content: DocContent | JSONContent): Word2[] => {
+  if (!content?.content) {
+    return [];
+  }
+
+  const words: Word2[] = [];
+
+  for (const speakerBlock of content.content) {
+    if (speakerBlock.type !== "speaker" || !speakerBlock.content) {
+      continue;
+    }
+
+    let speaker: SpeakerIdentity | null = null;
+    const attrs = speakerBlock.attrs || {};
+
+    if (attrs[SPEAKER_ID_ATTR]) {
+      speaker = {
+        type: "assigned",
+        value: {
+          id: attrs[SPEAKER_ID_ATTR],
+          label: attrs[SPEAKER_LABEL_ATTR] ?? "",
+        },
+      };
+    } else if (typeof attrs[SPEAKER_INDEX_ATTR] === "number") {
+      speaker = {
+        type: "unassigned",
+        value: {
+          index: attrs[SPEAKER_INDEX_ATTR],
+        },
+      };
+    }
+
+    for (const node of speakerBlock.content) {
+      if (node.type !== "text" || !node.text) {
+        continue;
+      }
+
+      const wordTexts = node.text.split(/\s+/).filter(Boolean);
+
+      for (const wordText of wordTexts) {
+        words.push({
+          text: wordText,
+          speaker,
+          confidence: null,
+          start_ms: null,
+          end_ms: null,
+        });
+      }
+    }
+  }
+
+  return words;
+};
+
+export const getSpeakerLabel = (attrs: Partial<SpeakerAttributes>): string => {
+  if (attrs[SPEAKER_LABEL_ATTR]) {
+    return attrs[SPEAKER_LABEL_ATTR];
+  } else if (attrs[SPEAKER_ID_ATTR]) {
+    return attrs[SPEAKER_ID_ATTR];
+  } else if (typeof attrs[SPEAKER_INDEX_ATTR] === "number") {
+    if (attrs[SPEAKER_INDEX_ATTR] === 0) {
+      return "You";
+    }
+    return `Speaker ${attrs[SPEAKER_INDEX_ATTR]}`;
+  } else {
+    return "Unknown Speaker";
+  }
+};

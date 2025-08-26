@@ -1,0 +1,76 @@
+[package]
+name = "tauri-plugin-listener"
+version = "0.1.0"
+authors = ["You"]
+edition = "2021"
+exclude = ["/js", "/node_modules"]
+links = "tauri-plugin-listener"
+description = ""
+
+[build-dependencies]
+tauri-plugin = { workspace = true, features = ["build"] }
+
+[dev-dependencies]
+insta = { workspace = true }
+rodio = { workspace = true, features = ["wav"] }
+serde_json = { workspace = true }
+specta-typescript = { workspace = true }
+uuid = { workspace = true }
+
+[dependencies]
+hypr-aec = { workspace = true }
+hypr-agc = { workspace = true }
+hypr-audio = { workspace = true }
+hypr-audio-utils = { workspace = true }
+hypr-data = { workspace = true }
+hypr-db-core = { workspace = true }
+hypr-db-user = { workspace = true }
+hypr-language = { workspace = true }
+hypr-tcc = { workspace = true }
+hypr-vad = { workspace = true }
+
+owhisper-client = { workspace = true }
+owhisper-interface = { workspace = true }
+
+tauri-plugin-auth = { workspace = true }
+tauri-plugin-connector = { workspace = true }
+tauri-plugin-db = { workspace = true }
+tauri-plugin-local-stt = { workspace = true }
+tauri-plugin-shell = { workspace = true }
+tauri-plugin-tray = { workspace = true }
+tauri-plugin-windows = { workspace = true }
+
+tauri = { workspace = true, features = ["specta", "test"] }
+
+specta = { workspace = true }
+tauri-specta = { workspace = true, features = ["derive", "typescript"] }
+
+bytes = { workspace = true }
+chrono = { workspace = true }
+codes-iso-639 = { workspace = true }
+dirs = { workspace = true }
+ordered-float = { version = "5", default-features = false }
+serde = { workspace = true }
+serde_json = { workspace = true }
+strum = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
+url = { workspace = true }
+uuid = { workspace = true, features = ["v4"] }
+
+futures-util = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+tokio-stream = { workspace = true }
+tracing = { workspace = true }
+
+hound = { workspace = true }
+
+flume = { workspace = true }
+statig = { workspace = true, features = ["async"] }
+
+[target."cfg(target_os = \"macos\")".dependencies]
+objc2 = { workspace = true }
+objc2-foundation = { workspace = true }
+
+[features]
+default = []
+load-dynamic = ["hypr-aec/load-dynamic"]

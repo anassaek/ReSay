@@ -1,0 +1,20 @@
+[package]
+name = "vad"
+version = "0.1.0"
+edition = "2021"
+
+[dev-dependencies]
+hound = { workspace = true }
+hypr-data = { workspace = true }
+rodio = { workspace = true }
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+kalosm-sound = { workspace = true, default-features = false }
+silero-rs = { workspace = true }
+
+futures-util = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+tracing = { workspace = true }
